@@ -65,6 +65,11 @@ type ContextCompressConfig struct {
 	RecentUserMsgUsedNums int
 }
 
+type PreciseContextConfig struct {
+	// filter "environment_details" user prompt in context
+	EnableEnvDetailsFilter bool
+}
+
 // Config holds all service configuration
 type Config struct {
 	// Server configuration
@@ -77,8 +82,9 @@ type Config struct {
 	// Logging configuration
 	Log LogConfig
 
-	// Context compression configuration
+	// Context handling configuration
 	ContextCompressConfig ContextCompressConfig
+	PreciseContextConfig  PreciseContextConfig
 
 	//Department configuration
 	DepartmentApiEndpoint string
@@ -87,4 +93,16 @@ type Config struct {
 	Redis RedisConfig
 
 	LLM LLMConfig
+}
+
+// AgentConfig holds configuration for a specific agent
+type AgentConfig struct {
+	MatchKeys  []string `mapstructure:"match_keys"`
+	MatchModes []string `mapstructure:"match_modes"`
+	Rules      string   `mapstructure:"rules"`
+}
+
+// RulesConfig holds the rules configuration for agents
+type RulesConfig struct {
+	Agents map[string]AgentConfig `yaml:"agents"`
 }
