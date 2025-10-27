@@ -3,6 +3,7 @@ package model
 import (
 	"bytes"
 	"encoding/json"
+	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -17,6 +18,44 @@ type TokenStats struct {
 	All          int `json:"all"`
 }
 
+// TokenRatio represents the ratio between processed and original tokens
+type TokenRatio struct {
+	SystemRatio float64 `json:"system_ratio"`
+	UserRatio   float64 `json:"user_ratio"`
+	AllRatio    float64 `json:"all_ratio"`
+}
+
+// TokenMetrics represents complete token statistics including original, processed and ratios
+type TokenMetrics struct {
+	Original  TokenStats `json:"original"`
+	Processed TokenStats `json:"processed"`
+	Ratios    TokenRatio `json:"ratios"`
+}
+
+// CalculateRatios calculates the token ratios between processed and original tokens
+func (tm *TokenMetrics) CalculateRatios() {
+	if tm.Original.All > 0 {
+		ratio := float64(tm.Processed.All) / float64(tm.Original.All)
+		tm.Ratios.AllRatio = math.Round(ratio*100) / 100
+	}
+	if tm.Original.SystemTokens > 0 {
+		ratio := float64(tm.Processed.SystemTokens) / float64(tm.Original.SystemTokens)
+		tm.Ratios.SystemRatio = math.Round(ratio*100) / 100
+	}
+	if tm.Original.UserTokens > 0 {
+		ratio := float64(tm.Processed.UserTokens) / float64(tm.Original.UserTokens)
+		tm.Ratios.UserRatio = math.Round(ratio*100) / 100
+	}
+}
+
+// LatencyMetrics represents latency metrics in milliseconds
+type LatencyMetrics struct {
+	MainModelLatency  int64 `json:"main_model_latency_ms"`
+	TotalLatency      int64 `json:"total_latency_ms"`
+	FirstTokenLatency int64 `json:"first_token_latency_ms"`
+	WindowLatency     int64 `json:"window_latency_ms"`
+}
+
 type ToolCall struct {
 	ToolName     string `json:"tool_name"`
 	ToolInput    string `json:"tool_input"`
@@ -26,31 +65,37 @@ type ToolCall struct {
 	Error        string `json:"error"`
 }
 
+// RequestParams represents the request parameters for a chat completion
+type RequestParams struct {
+	Model               string   `json:"model"`
+	PromptMode          string   `json:"prompt_mode"`
+	MaxTokens           *int     `json:"max_tokens,omitempty"`
+	MaxCompletionTokens *int     `json:"max_completion_tokens,omitempty"`
+	Temperature         *float64 `json:"temperature,omitempty"`
+}
+
 // ChatLog represents a single chat completion log entry
 type ChatLog struct {
-	Identity   Identity  `json:"identity"`
-	Timestamp  time.Time `json:"timestamp"`
-	Model      string    `json:"model"`
-	PromptMode string    `json:"prompt_mode"`
+	Identity  Identity      `json:"identity"`
+	Timestamp time.Time     `json:"timestamp"`
+	Params    RequestParams `json:"params"`
 
 	// Token statistics
-	OriginalTokens   TokenStats `json:"original_tokens"`
-	CompressedTokens TokenStats `json:"compressed_tokens"`
+	Tokens TokenMetrics `json:"tokens"`
 
 	// Processing flags
 	IsPromptProceed        bool `json:"is_prompt_proceed"`
 	IsUserPromptCompressed bool `json:"is_user_prompt_compressed"`
 
-	// Latency metrics (in milliseconds)
-	MainModelLatency int64 `json:"main_model_latency_ms"`
-	TotalLatency     int64 `json:"total_latency_ms"`
+	// Latency metrics
+	Latency LatencyMetrics `json:"latency"`
 
 	// Tools
 	ToolCalls []ToolCall `json:"tool_calls"`
 
 	// Content samples (truncated for logging)
-	OriginalPrompt   []types.Message `json:"original_prompt"`
-	CompressedPrompt []types.Message `json:"compressed_prompt"`
+	OriginalPrompt  []types.Message `json:"original_prompt"`
+	ProcessedPrompt []types.Message `json:"processed_prompt"`
 
 	// Response information
 	ResponseContent string              `json:"response_content,omitempty"`
@@ -131,7 +176,7 @@ func CreateLokiStream(log *ChatLog) *LogStream {
 	// Add log entry to stream
 	logCopy := *log
 	logCopy.OriginalPrompt = nil
-	logCopy.CompressedPrompt = nil
+	logCopy.ProcessedPrompt = nil
 	logJSON, _ := logCopy.ToCompressedJSON()
 
 	return &LogStream{
