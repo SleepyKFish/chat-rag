@@ -479,18 +479,10 @@ func buildDefinitionRequest(identity *model.Identity, param string) (client.Defi
 		return req, fmt.Errorf("filePath: %w", err)
 	}
 
-	codebasePath := req.CodebasePath
 	// Check the operating system type and convert the file path separator if it is a Windows system
 	if strings.Contains(strings.ToLower(identity.ClientOS), "windows") {
 		req.FilePath = strings.ReplaceAll(req.FilePath, "/", "\\")
-		codebasePath = strings.ReplaceAll(codebasePath, "/", "\\")
 	}
-
-	if !strings.Contains(req.FilePath, codebasePath) {
-		return req, fmt.Errorf("filePath must be full absolute path, please try again")
-	}
-
-	// No optional parameters for DefinitionRequest
 
 	return req, nil
 }
@@ -529,15 +521,8 @@ func processFilePath(req *client.ReferenceRequest, identity *model.Identity, par
 	}
 
 	// Process file path separators
-	codebasePath := req.CodebasePath
 	if strings.Contains(strings.ToLower(identity.ClientOS), "windows") {
 		req.FilePath = strings.ReplaceAll(req.FilePath, "/", "\\")
-		codebasePath = strings.ReplaceAll(codebasePath, "/", "\\")
-	}
-
-	// Validate file path
-	if !strings.Contains(req.FilePath, codebasePath) {
-		return fmt.Errorf("filePath must be full absolute path, please try again")
 	}
 
 	return nil
