@@ -467,9 +467,9 @@ func buildDefinitionRequest(identity *model.Identity, param string) (client.Defi
 		ClientVersion: identity.ClientVersion,
 	}
 
-	// Check if using symbolName query mode
-	if symbolName, err := extractXmlParam(param, "symbolName"); err == nil {
-		req.SymbolName = symbolName
+	// Check if using symbolNames query mode
+	if symbolNames, err := extractXmlParam(param, "symbolNames"); err == nil {
+		req.SymbolNames = symbolNames
 		return req, nil
 	}
 
@@ -490,14 +490,7 @@ func buildDefinitionRequest(identity *model.Identity, param string) (client.Defi
 		return req, fmt.Errorf("filePath must be full absolute path, please try again")
 	}
 
-	// Optional parameters
-	if startLine, err := extractXmlIntParam(param, "startLine"); err == nil {
-		req.StartLine = &startLine
-	}
-
-	if endLine, err := extractXmlIntParam(param, "endLine"); err == nil {
-		req.EndLine = &endLine
-	}
+	// No optional parameters for DefinitionRequest
 
 	return req, nil
 }
@@ -552,13 +545,9 @@ func processFilePath(req *client.ReferenceRequest, identity *model.Identity, par
 
 // processOptionalParams handles optional parameters
 func processOptionalParams(req *client.ReferenceRequest, param string) {
-	// Process startLine and endLine
-	if startLine, err := extractXmlIntParam(param, "startLine"); err == nil {
-		req.StartLine = &startLine
-	}
-
-	if endLine, err := extractXmlIntParam(param, "endLine"); err == nil {
-		req.EndLine = &endLine
+	// Process lineRange
+	if lineRange, err := extractXmlParam(param, "lineRange"); err == nil {
+		req.LineRange = lineRange
 	}
 
 	// Process maxLayer, default is 10
