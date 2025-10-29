@@ -114,12 +114,13 @@ Note:
 2. This tool is more efficient and uses fewer tokens than regex matching or directly searching files to obtain symbol definitions.
 
 Parameters:
-- symbolNames: (required) One or more symbol name elements, in the format "symbolName" (e.g., types.QueryCallGraphOptions → QueryCallGraphOptions, omitting any scope or namespace prefix).
+- symbolNames: (required) One or more target symbol names to search for definitions. Separate each symbol name with a comma.
 
 Usage:
 <code_definition_search>
-  <symbolNames>Name of symbol</symbolNames>
+  <symbolNames>SymbolName1,SymbolName2</symbolNames>
 </code_definition_search>
+
 
 Examples:
 
@@ -130,9 +131,7 @@ Examples:
 
 2. Querying multiple symbols (within the 8-symbol limit)
 <code_definition_search>
-  <symbolNames>countFilesAndSize</symbolNames>
-  <symbolNames>RelationNode</symbolNames>
-  <symbolNames>defaultCacheCapacity</symbolNames>
+  <symbolNames>countFilesAndSize,RelationNode,defaultCacheCapacity</symbolNames>
 </code_definition_search>
 
 IMPORTANT: You MUST follow this Efficient Symbol Query Strategy:
@@ -140,7 +139,7 @@ IMPORTANT: You MUST follow this Efficient Symbol Query Strategy:
 - You MUST obtain all necessary context before analyzing or modifying code
 - You MUST obtain complete definition information for each referenced symbol
 - You MUST prioritize the most critical symbols first when querying multiple symbols
-
+- You MUST write each symbol name in plain form (e.g., types.QueryCallGraphOptions → QueryCallGraphOptions), omitting any package, namespace, or class prefixes.
 - You MUST use subsequent queries for additional symbols if more than 8 need to be analyzed
 `
 	// DefinitionSearchTool
