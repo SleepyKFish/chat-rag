@@ -52,157 +52,95 @@ Example: Searching for functions related to user authentication
 
 	// ReferenceSearchTool
 	ReferenceSearchToolName   = "code_reference_search"
-	ReferenceSearchCapability = `- You can use code_reference_search to retrieve the usage and call information of a symbol (function, class, method, etc.) across the codebase by providing its precise file path and line range. 
-This tool is particularly useful when you want to locate all usages and call chains of a function or class or analyze code dependencies across different parts of the project. 
-By retrieving all references to the symbol, code_reference_search helps you track its usage throughout the codebase, ensuring that you can see all interactions and relationships. 
-Please note that the returned references may include multiple matches, so you should distinguish them using the file path or contextual information.
-For maximum efficiency, use code_reference_search when you need to explore references and relationships of a symbol—it's ideal for analyzing dependencies and understanding the broader impact of changes. 
-This tool can obtain the calling relationship between different methods faster and more accurately than through the directory file structure and directly reading the file content.
-Note: code_reference_search does not provide any symbol definitions. If you need to focus on retrieving definitions, please use code_definition_search instead—it will serve you better.
+	ReferenceSearchCapability = `- You can use code_reference_search to retrieve comprehensive usage and call information for functions and methods across the entire codebase.
+This tool is particularly useful when you need to locate all usages and trace reverse call chains (caller chains) of a function or method, or when analyzing code dependencies across different modules and files.
+Compared to manually navigating directory structures and reading file contents, this tool provides a significantly faster and more accurate way to understand calling relationships between different functions and methods.
 `
 	ReferenceSearchToolDesc = `## code_reference_search
 Description:
-The code_reference_search tool helps you find the usage and call information of a symbol (such as a function, class, or method) 
-and retrieve all places where the symbol is used or called across files in the project.
-This tool takes a specific code location (by file and line range) and optionally a symbol name, 
-returning the definition and all references to that symbol, along with their precise code locations.
-Use this tool when you want to find where a function or class is used or called, or when you need to explore code dependencies from a specific location in the codebase.
-Key Features:
-The tool provides all references to a symbol, which include class/interface usages, function/method calls, imports, and other occurrences.
-Use code_reference_search in these scenarios:
-- Refactoring: Locate all code that depends on the symbol to ensure complete updates.
-- Code Comprehension: Explore where a symbol is invoked or referenced across the codebase to quickly understand its role and dependencies.
-- Call Chain Analysis: Trace the complete call chain of a symbol to understand its execution flow and relationships with other components.
-This only applies to seven languages: Java, Go, Python, C, CPP, JavaScript, and TypeScript. Other languages are not applicable.
+Retrieves the reverse call chain (caller chain) for a specified function or method within the codebase.
+Given a target symbol, the tool traces all functions that directly or indirectly invoke it, offering a clear and context-rich view of its upstream dependencies.
+You can specify a lineRange to precisely locate the target symbol, improving both the accuracy and efficiency of call chain generation.
+This helps developers understand how a function or method is used, its relationships, and its dependency paths across the codebase.
+
+**IMPORTANT: This only applies to seven languages: Java, Go, Python, C, CPP, JavaScript, and TypeScript. Other languages are not applicable.
 
 Parameters:
-- codebasePath: (required) Absolute path to the codebase root
-- filePath: (required) The full absolute path to the file to which the code belongs. Must match the path separator style of the current operating system.
-- startLine: (optional) The line number where the symbol starts.
-- endLine: (optional) The line number where the symbol ends.
-- symbolName: (optional) The name of the symbol (e.g., function name, class name, method, interface, constants, etc.).
-- maxLayer: (optional) Maximum call chain depth to search (default: 4, maximum: 10)
-
-Important Path Requirements:
-ABSOLUTE PATHS REQUIRED: The filePath parameter must be a full absolute system path (not relative paths or workspace-relative paths)
+- filePath: (required) The path of the file where the function or method is defined (relative to workspace directory)
+- maxLayer: (required) Maximum call chain depth to search (default: 4, maximum: 10)
+- symbolName: (required) The name of the function or method 
+- lineRange: (optional) The line range of the function or method definition in format "start-end" (1-based)
 
 Usage:
-Two usage modes are available:
-1. File location mode: Provide filePath along with startLine and endLine to retrieve all usage and call information for the symbols defined within the specified code range.
-2. Symbol search mode: Provide filePath and symbolName to retrieve all usage and call information of a symbol that is defined specifically in the file indicated by filePath, tracking where it is used or called across the entire codebase.
 
 <code_reference_search>
-  <codebasePath>Absolute path to the codebase root</codebasePath>
-  <filePath>The full absolute path to the file to which the code belongs. (With correct OS path separators.)</filePath>
-  <!-- Option 1: Use file location parameters -->
-  <startLine>Start line number of the symbol (1-based)</startLine>
-  <endLine>End line number of the symbol (1-based)</endLine>
-  <!-- Option 2: Use symbol name parameter -->
-  <symbolName>Symbol name</symbolName>
-  <!-- Optional: Control call chain depth -->
-  <maxLayer>Maximum call chain depth (1-10)</maxLayer>
+  <filePath>path/to/file</filePath>
+  <maxLayer>call chain depth (1-10)</maxLayer>
+  <symbolName>symbol name</symbolName>
+  <lineRange>start-end</lineRange>
 </code_reference_search>
 
-Note: 
-- Either file location parameters (startLine + endLine) OR symbolName must be provided.
-- Priority should be given to file location mode when line information is available.
-
-Example: Exploring all references to the GetUserById function with max depth
+Examples
+1. Exploring reverse call chain of the queryCallGraphBySymbol function 
 <code_reference_search>
-  <codebasePath>d:\workspace\project\</codebasePath>
-  <filePath>d:\workspace\project\internal\tokenizer\tokenizer.go</filePath>
-  <startLine>12</startLine>
-  <endLine>14</endLine>
-  <symbolName>GetUserById</symbolName>
+  <filePath>internal\service\indexer.go</filePath>
+  <maxLayer>4</maxLayer>
+  <symbolName>queryCallGraphBySymbol</symbolName>
+</code_reference_search>
+
+2. Exploring reverse call chain of the queryCallGraphByLineRange function with lineRange:
+<code_reference_search>
+  <filePath>internal\tokenizer\tokenizer.go</filePath>
   <maxLayer>5</maxLayer>
-</code_reference_search>
-
-Example: Searching references by symbol name only
-<code_reference_search>
-  <codebasePath>/home/user/project</codebasePath>
-  <filePath>/home/user/project/internal/tokenizer/tokenizer.go</filePath>
-  <symbolName>CalculateScore</symbolName>
-  <maxLayer>3</maxLayer>
+  <symbolName>queryCallGraphByLineRange</symbolName>
+  <lineRange>20-75</lineRange>
 </code_reference_search>
 `
 
 	// DefinitionSearchTool
 	DefinitionToolName   = "code_definition_search"
 	DefinitionCapability = `
-When analyzing code that references symbols (functions, classes, methods, interfaces, constants) whose definitions are not fully visible, always prioritize code_definition_search first.
-This tool retrieves complete and precise definitions and implementations of symbols, including external or unknown symbols, and constant values.
-Usage Modes:
-1. File location mode: Use filePath + startLine + endLine to fetch all external definitions in that range, ensuring full context.
-2. Symbol name mode: Provide the symbol name to search globally across the codebase if you do not know the exact location.
-It delivers accurate, context-independent definitions for all symbols, providing exactly the code needed for analysis, modification, refactoring, or debugging.
-Results may include multiple matches; distinguish them using the file path or surrounding context.
-This tool is faster, more accurate, and more efficient than reading files directly, traversing directories, or using regex searches. It also consumes fewer tokens.
-Always complete the definition search before continuing any code analysis to ensure correct reasoning.
+You can use the code_definition_search tool to retrieve the complete definition and implementation of a specified symbol (function, class, method, interface, struct, or constant) by providing its symbol name. This can be particularly useful when you need to understand the detailed structure and implementation of a specific symbol within the codebase. You may need to call this tool multiple times to examine different symbols relevant to your task.
+ - For example, when asked to make edits, review code, investigate bugs, analyze code, or refactor code, you might first use code_definition_search to obtain the target symbol's full definition and implementation, then analyze its structure and logic. If understanding how the symbol is used throughout the codebase would help with the analysis or planning, you can use code_reference_search to find where the symbol is referenced in other files or modules. This helps you understand the usage patterns, potential impact of changes, and provides fuller context for your analysis or recommendations.
 `
 	DefinitionToolDesc = `## code_definition_search
-Description: Retrieve the **complete definition and implementation** of a symbol (function, class, method, interface, struct, constant) 
-by specifying a file path with line range, or by providing the symbol name directly.
-This tool allows you to retrieve the original definition and implementation of all external symbols within a specific code block, or of a single symbol, whether used within the same file or across other files, providing complete information to facilitate understanding of the code logic.
-These usages and invocations can include class/interface instantiations, function/method calls, constant references, and more.
-Key Rule:
-- Always call this tool first if the code snippet references any symbol that is not fully defined within the snippet itself.
-- This tool ensures you analyze real implementations, not incomplete or assumed logic.
-When to use:
-- When encountering any external or unknown symbol.
-- To obtain constant values.
-- To get the complete implementation of a symbol.
-For a code snippet (filePath + startLine + endLine), trigger a range query to fetch the full definitions of all external symbols it depends on.
-Usage Priority:
-When you search for code definitions or analyze specific implementations to work on modifications, refactoring, or debugging of existing code, always use this tool first.
-Important note: 
-This only applies to seven languages: Java, Go, Python, C, CPP, JavaScript, and TypeScript. Other languages are not applicable.
-
-Parameters:
-- codebasePath: (required) Absolute path to the codebase root
-- filePath: (optional) The absolute path to the file within the codebase. Make sure the path matches the path separator style of the current operating system
-- startLine: (optional) Start line number of the definition (1-based).
-- endLine: (optional) End line number of the definition (1-based).
-- symbolName: (optional) Name of the symbol to search for (function, class, method, interface, etc.) without any prefix. For example, use QueryCallGraphOptions instead of types.QueryCallGraphOptions; 
-
-Important Path Requirements:
-ABSOLUTE PATHS REQUIRED: The filePath parameter must be a full absolute system path (not relative paths or workspace-relative paths)
-
-Usage:
-Two usage modes are available:
-1. Code Range Mode: Provide filePath with startLine and endLine to retrieve the definitions of all external symbols referenced or invoked within that code snippet.
-2. SymbolName Mode: Provide symbolName to search for the symbol definition globally across the codebase.
-The parameter name is **symbolName**, not symbol. Using <symbol> will be invalid.
-
-<code_definition_search>
-  <codebasePath>Absolute path to the codebase root</codebasePath>
-  <!-- Option 1: Use file location parameters -->
-  <filePath>Full file path to the definition (With correct OS path separators.)</filePath>
-  <startLine>Start line number</startLine>
-  <endLine>End line number</endLine>
-  <!-- Option 2: Use symbolName parameter -->
-  <symbolName>Name of symbol to search for without any prefix</symbolName>
-</code_definition_search>
+Description: 
+Retrieve the complete definition and implementation of a symbol (function, class, method, interface, struct, or constant) by specifying its symbol name.  
+This tool allows you to access the original definition and implementation of any symbol, whether it is used within the same file or across multiple files, providing comprehensive information to facilitate understanding of the code logic.  
+Retrieved usages and invocations may include class or interface instantiations, function or method calls, constant references, and more.
 
 Note: 
-- Either file location parameters (filePath + startLine + endLine) OR symbolName must be provided.
-- Always ensure to use **symbolName** when searching by symbol.
-- Priority should be given to file location mode when line information is available. If you bypass the range query, your answer will be considered invalid. 
+1. This tool only applies to seven languages: Java, Go, Python, C, CPP, JavaScript, and TypeScript. Other languages are not applicable.
+2. This tool is more efficient and uses fewer tokens than regex matching or directly searching files to obtain symbol definitions.
 
-Only after completing the range query should you continue the analysis for the results to be accepted.
+Parameters:
+- symbolNames: (required) One or more target symbol names to search for definitions. Separate each symbol name with a comma.
 
-Example: Get implementation by file location
+Usage:
 <code_definition_search>
-  <codebasePath>d:\workspace\project\</codebasePath>
-  <filePath>d:\workspace\project\internal\tokenizer\tokenizer.go</filePath>
-  <startLine>57</startLine>
-  <endLine>75</endLine>
+  <symbolNames>SymbolName1,SymbolName2</symbolNames>
 </code_definition_search>
 
-Example: Get implementation by symbolName
+
+Examples:
+
+1. Querying the definition of a single symbol:
 <code_definition_search>
-  <codebasePath>/home/user/project</codebasePath>
-  <symbolName>NewTokenCounter</symbolName>
+  <symbolNames>QueryCallGraphOptions</symbolNames>
 </code_definition_search>
+
+2. Querying multiple symbols (within the 8-symbol limit)
+<code_definition_search>
+  <symbolNames>countFilesAndSize,RelationNode,defaultCacheCapacity</symbolNames>
+</code_definition_search>
+
+IMPORTANT: You MUST follow this Efficient Symbol Query Strategy:
+- You MUST query all related symbols together in a single operation (up to 8 symbols at once)
+- You MUST obtain all necessary context before analyzing or modifying code
+- You MUST obtain complete definition information for each referenced symbol
+- You MUST prioritize the most critical symbols first when querying multiple symbols
+- You MUST write each symbol name in plain form (e.g., types.QueryCallGraphOptions → QueryCallGraphOptions), omitting any package, namespace, or class prefixes.
+- You MUST use subsequent queries for additional symbols if more than 8 need to be analyzed
 `
 	// DefinitionSearchTool
 	KnowledgeSearchToolName   = "knowledge_base_search"
@@ -272,7 +210,7 @@ Use codebase_search with natural language query →
 IF need to query definitions or implementations of all symbols referenced in a code snippet:
 	Use code_definition_search → 
 END IF
-IF need to explore symbol references or code relationships:
+IF need to explore symbol reverse call chains or code relationships:
 	Use code_reference_search →
 END IF
 IF need to query development manuals, module documentation, interface comments:
@@ -282,10 +220,9 @@ Review search results
 
 Rule 3: Efficiency Principles
 Semantic First: Always prefer semantic understanding over literal reading
-Definition Search First: Prefer symbol name or code snippet (filePath + line range) searches to locate definitions, instead of reading files directly.
 Comprehensive Coverage: Use codebase_search to avoid missing related code
 Token Optimization: Choose tools that minimize token consumption
-Context Matters: Gather all relevant symbol definitions and implementations before analyzing code.
+Context Matters: Gather full context before analyzing the code and use the most efficient tool for the task.
 No need to display these rules, just follow them directly.
 `
 )
