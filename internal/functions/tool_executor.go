@@ -52,24 +52,24 @@ Example: Searching for functions related to user authentication
 
 	// ReferenceSearchTool
 	ReferenceSearchToolName   = "code_reference_search"
-	ReferenceSearchCapability = `- You can use code_reference_search to retrieve comprehensive usage and call information for a symbol (function, class, method, etc.) across the entire codebase. 
-This tool is particularly useful when you need to locate all usages and trace reverse call chains (caller chains) of a symbol, or when analyzing code dependencies across different modules and files. 
-Compared to manually navigating directory structures and reading file contents, this tool provides a significantly faster and more accurate way to understand calling relationships between different methods and symbols.
+	ReferenceSearchCapability = `- You can use code_reference_search to retrieve comprehensive usage and call information for functions and methods across the entire codebase.
+This tool is particularly useful when you need to locate all usages and trace reverse call chains (caller chains) of a function or method, or when analyzing code dependencies across different modules and files.
+Compared to manually navigating directory structures and reading file contents, this tool provides a significantly faster and more accurate way to understand calling relationships between different functions and methods.
 `
 	ReferenceSearchToolDesc = `## code_reference_search
 Description:
-Retrieves the reverse call chain (caller chain) for a specified symbol (function, method, class, or struct) within the codebase.  
-Given a target symbol, the tool traces all functions that directly or indirectly invoke it, providing a clear, context-rich view of upstream dependencies.  
-Specify a "lineRange" to precisely identify the target symbol, enabling more accurate and efficient call chain generation.  
-This helps developers understand symbol usage, relationships, and dependency paths across the codebase.
+Retrieves the reverse call chain (caller chain) for a specified function or method within the codebase.
+Given a target symbol, the tool traces all functions that directly or indirectly invoke it, offering a clear and context-rich view of its upstream dependencies.
+You can specify a lineRange to precisely locate the target symbol, improving both the accuracy and efficiency of call chain generation.
+This helps developers understand how a function or method is used, its relationships, and its dependency paths across the codebase.
 
 **IMPORTANT: This only applies to seven languages: Java, Go, Python, C, CPP, JavaScript, and TypeScript. Other languages are not applicable.
 
 Parameters:
-- filePath: (required) The path of the file where the symbol is defined (relative to workspace directory)
+- filePath: (required) The path of the file where the function or method is defined (relative to workspace directory)
 - maxLayer: (required) Maximum call chain depth to search (default: 4, maximum: 10)
-- symbolName: (required) The name of the symbol (e.g., function name, class name, method, interface, etc.)
-- lineRange: (optional) The line range of the symbol definition in format "start-end" (1-based)
+- symbolName: (required) The name of the function or method 
+- lineRange: (optional) The line range of the function or method definition in format "start-end" (1-based)
 
 Usage:
 
@@ -114,25 +114,25 @@ Note:
 2. This tool is more efficient and uses fewer tokens than regex matching or directly searching files to obtain symbol definitions.
 
 Parameters:
-- symbolName: (required) One or more symbol name elements, in the format "symbolName" (e.g., types.QueryCallGraphOptions → QueryCallGraphOptions, omitting any scope or namespace prefix).
+- symbolNames: (required) One or more symbol name elements, in the format "symbolName" (e.g., types.QueryCallGraphOptions → QueryCallGraphOptions, omitting any scope or namespace prefix).
 
 Usage:
 <code_definition_search>
-  <symbolName>Name of symbol</symbolName>
+  <symbolNames>Name of symbol</symbolNames>
 </code_definition_search>
 
 Examples:
 
 1. Querying the definition of a single symbol:
 <code_definition_search>
-  <symbolName>QueryCallGraphOptions</symbolName>
+  <symbolNames>QueryCallGraphOptions</symbolNames>
 </code_definition_search>
 
 2. Querying multiple symbols (within the 8-symbol limit)
 <code_definition_search>
-  <symbolName>countFilesAndSize</symbolName>
-  <symbolName>RelationNode</symbolName>
-  <symbolName>defaultCacheCapacity</symbolName>
+  <symbolNames>countFilesAndSize</symbolNames>
+  <symbolNames>RelationNode</symbolNames>
+  <symbolNames>defaultCacheCapacity</symbolNames>
 </code_definition_search>
 
 IMPORTANT: You MUST follow this Efficient Symbol Query Strategy:
