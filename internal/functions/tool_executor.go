@@ -51,16 +51,16 @@ Example: Searching for functions related to user authentication
 `
 
 	// ReferenceSearchTool
-	ReferenceSearchToolName   = "code_reference_search"
-	ReferenceSearchCapability = `- You can use code_reference_search to retrieve comprehensive usage and call information for functions and methods across the entire codebase.
-This tool is particularly useful when you need to locate all usages and trace reverse call chains (caller chains) of a function or method, or when analyzing code dependencies across different modules and files.
-Compared to manually navigating directory structures and reading file contents, this tool provides a significantly faster and more accurate way to understand calling relationships between different functions and methods.
+	ReferenceSearchToolName   = "search_references"
+	ReferenceSearchCapability = `- You can use search_references to retrieve comprehensive usage and call information for functions and methods across the entire codebase. This tool is particularly useful when you need to locate all usages and trace reverse call chains (caller chains) of a function or method, or when analyzing code dependencies across different modules and files. Compared to manually navigating directory structures and reading file contents, this tool provides a significantly faster and more accurate way to understand calling relationships between different functions and methods.
+    - For example, when asked to review code snippets, investigate bugs, or analyze code, you MUST use search_references to obtain the reverse call chain of a function or method to understand how its parameters are passed, validated, and propagated in higher-level calls, which is critical because bugs are often caused by incorrect upstream parameter passing rather than the function itself, and without checking callers you might miss that a security vulnerability exists in how upstream code passes unvalidated input or that performance issues stem from callers invoking the function too frequently in wrong contexts.
+    - For example, when asked to refactor code, you must use search_references to obtain the reverse call chain of a function or method before making any changes to identify all call sites that need modification when changing function signatures, assess backward compatibility requirements, and understand different calling patterns to ensure the refactored version handles all cases, because refactoring without checking callers first will break existing functionality across potentially dozens of call sites.
 `
-	ReferenceSearchToolDesc = `## code_reference_search
-Description:
-Retrieves the reverse call chain (caller chain) for a specified function or method within the codebase.
-Given a target symbol, the tool traces all functions that directly or indirectly invoke it, offering a clear and context-rich view of its upstream dependencies.
-You can specify a lineRange to precisely locate the target symbol, improving both the accuracy and efficiency of call chain generation.
+
+	ReferenceSearchToolDesc = `## search_references
+Description: Retrieves the reverse call chain (caller chain) for a specified function or method within the codebase.
+Given the name of a function or method, this tool traces all other functions or methods that directly or indirectly invoke it, providing a clear and context-rich view of its upstream dependencies.
+You can specify a lineRange to precisely locate the target function or method, improving both the accuracy and efficiency of call chain generation.
 This helps developers understand how a function or method is used, its relationships, and its dependency paths across the codebase.
 
 **IMPORTANT: This only applies to seven languages: Java, Go, Python, C, CPP, JavaScript, and TypeScript. Other languages are not applicable.
@@ -73,74 +73,91 @@ Parameters:
 
 Usage:
 
-<code_reference_search>
+<search_references>
   <filePath>path/to/file</filePath>
   <maxLayer>call chain depth (1-10)</maxLayer>
   <symbolName>symbol name</symbolName>
   <lineRange>start-end</lineRange>
-</code_reference_search>
+</search_references>
 
 Examples
 1. Exploring reverse call chain of the queryCallGraphBySymbol function 
-<code_reference_search>
+<search_references>
   <filePath>internal\service\indexer.go</filePath>
   <maxLayer>4</maxLayer>
   <symbolName>queryCallGraphBySymbol</symbolName>
-</code_reference_search>
+</search_references>
 
 2. Exploring reverse call chain of the queryCallGraphByLineRange function with lineRange:
-<code_reference_search>
+<search_references>
   <filePath>internal\tokenizer\tokenizer.go</filePath>
   <maxLayer>5</maxLayer>
   <symbolName>queryCallGraphByLineRange</symbolName>
   <lineRange>20-75</lineRange>
-</code_reference_search>
+</search_references>
 `
 
 	// DefinitionSearchTool
-	DefinitionToolName   = "code_definition_search"
+	DefinitionToolName   = "search_definitions"
 	DefinitionCapability = `
-You can use the code_definition_search tool to retrieve the complete definition and implementation of a specified symbol (function, class, method, interface, struct, or constant) by providing its symbol name. This can be particularly useful when you need to understand the detailed structure and implementation of a specific symbol within the codebase. You may need to call this tool multiple times to examine different symbols relevant to your task.
- - For example, when asked to make edits, review code, investigate bugs, analyze code, or refactor code, you might first use code_definition_search to obtain the target symbol's full definition and implementation, then analyze its structure and logic. If understanding how the symbol is used throughout the codebase would help with the analysis or planning, you can use code_reference_search to find where the symbol is referenced in other files or modules. This helps you understand the usage patterns, potential impact of changes, and provides fuller context for your analysis or recommendations.
+- You can use the search_definitions tool to retrieve the complete definitions and implementations of one or more specified symbols (such as constants,functions, classes, methods, interfaces, and structs) by providing their symbol names. This is particularly useful when you need to understand the detailed structure and logic of a symbol, or to gather the definitions of referenced symbols to build a more complete context within the codebase. You may need to call this tool multiple times to examine different symbols relevant to your task.
+    - For example, when asked to make edits, review code, investigate bugs, analyze code, or refactor code, you might first use search_definitions to obtain the full definitions and implementations of symbols referenced within the code, in order to supplement the context and fully understand the logic. Then, analyze the structure and behavior based on the gathered definitions. If understanding how a function or method is used throughout the codebase—including how its parameters are passed, validated, and propagated in higher-level calls—is valuable for tasks such as code review or refactoring, you can use search_references to find where it is referenced in other files or modules.
+    - For example, when asked to retrieve symbol definitions, use this tool to obtain results more quickly, accurately, and with lower token cost.
+    - For example, when asked to retrieve, find, show, or explain specific symbol definitions such as "show me the UserService class" or "what does the calculateTax function do", you should use search_definitions to obtain results more quickly, accurately, and with lower token cost compared to searching through files manually.
 `
-	DefinitionToolDesc = `## code_definition_search
-Description: 
-Retrieve the complete definition and implementation of a symbol (function, class, method, interface, struct, or constant) by specifying its symbol name.  
-This tool allows you to access the original definition and implementation of any symbol, whether it is used within the same file or across multiple files, providing comprehensive information to facilitate understanding of the code logic.  
-Retrieved usages and invocations may include class or interface instantiations, function or method calls, constant references, and more.
 
+	DefinitionToolDesc = `## search_definitions
+Description: Retrieve the complete definitions and implementations of one or more symbols defined within the project (not external libraries), or of symbols referenced within the code that you need to understand in context.
+This tool allows you to quickly and accurately retrieve the original definitions and full implementations of all symbols—such as constants, structs, interfaces, functions, methods, and classes—as well as their values. It can also obtain the definitions and implementations of all external symbols within a specific code block, or of a single symbol, whether used within the same file or across other files, providing complete information to facilitate understanding of the code logic.
+Compared with using the search_files tool or reading files directly, this tool is significantly more efficient, accurate, and token-friendly, allowing you to obtain results more quickly, accurately, and with lower token cost. It provides comprehensive information to help you fully understand the code logic and referenced symbols, making it the preferred method for retrieving symbol definitions.
+Key Rule:
+- Always call this tool first if the code snippet references any symbol that is not fully defined within the snippet itself.
+- This tool ensures you analyze real implementations, not incomplete or assumed logic.
 Note: 
 1. This tool only applies to seven languages: Java, Go, Python, C, CPP, JavaScript, and TypeScript. Other languages are not applicable.
-2. This tool is more efficient and uses fewer tokens than regex matching or directly searching files to obtain symbol definitions.
+2. This tool is more efficient and uses fewer tokens than search_files tool or directly reading files to obtain symbol definitions.
 
 Parameters:
 - symbolNames: (required) One or more target symbol names to search for definitions. Separate each symbol name with a comma.
 
 Usage:
-<code_definition_search>
+<search_definitions>
   <symbolNames>SymbolName1,SymbolName2</symbolNames>
-</code_definition_search>
+</search_definitions>
 
 
 Examples:
 
 1. Querying the definition of a single symbol:
-<code_definition_search>
+<search_definitions>
   <symbolNames>QueryCallGraphOptions</symbolNames>
-</code_definition_search>
+</search_definitions>
 
 2. Querying multiple symbols (within the 8-symbol limit)
-<code_definition_search>
+<search_definitions>
   <symbolNames>countFilesAndSize,RelationNode,defaultCacheCapacity</symbolNames>
-</code_definition_search>
+</search_definitions>
 
-IMPORTANT: You MUST follow this Efficient Symbol Query Strategy:
-- You MUST query all related symbols together in a single operation (up to 8 symbols at once)
+IMPORTANT: You MUST follow this Efficient Symbol Defini Definition Strategy:
+- You MUST query all related symbols in one go whenever possible (up to 8 symbols per operation).
+- You MUST NOT split the request into multiple queries if they can be searched in a single batch operation.
 - You MUST obtain all necessary context before analyzing or modifying code
 - You MUST obtain complete definition information for each referenced symbol
 - You MUST prioritize the most critical symbols first when querying multiple symbols
-- You MUST write each symbol name in plain form (e.g., types.QueryCallGraphOptions → QueryCallGraphOptions), omitting any package, namespace, or class prefixes.
+- You MUST write each symbol name in PLAIN form (e.g., types.QueryCallGraphOptions → QueryCallGraphOptions), omitting any package, namespace, or class prefixes.
 - You MUST use subsequent queries for additional symbols if more than 8 need to be analyzed
+
+**When to Use:**
+- You need to check a symbol's full definition before editing, reviewing, or refactoring code.
+- You need to analyze a symbol's structure, logic (across files/modules) and require its definition.
+- You're troubleshooting bugs or security issues and need to understand a symbol's implementation via its definition.
+- You plan to modify a function, method, class, or constant and need its definition to assess impact.
+- You're building code context (e.g., understanding code logic) and need definitions of referenced symbols.
+
+**When NOT to Use:**
+- The task is minor code editing that doesn't require a symbol's complete definition.
+- The request is exploratory or informational, with no specific symbol to look up the definition for.
+- You don't have a specific symbol name to look up its definition (the tool relies on a clear symbol name to work).
 `
 	// DefinitionSearchTool
 	KnowledgeSearchToolName   = "knowledge_base_search"
@@ -190,28 +207,33 @@ Searching for Java class naming rules in Project B development standards:
 ====
 
 TOOLS USE FOLLOW RULES
+- Don't use search_files to search for symbol definitions or call chains. It is highly inefficient, consumes excessive tokens, and returns imprecise results.
+- Before reading the file directly, you can try to use codebase_search, search_definitions and search_references tools to search the code.
+- IMPORTANT: After receiving the results from tools such as codebase_search, knowledge_base_search, search_definitions, and search_references, you must always summarize the key findings and/or code within <thinking> tags before calling any other tools.
+- If the search failed, don't say "failed", describe this outcome as "did not find relevant results" instead.
+- You MUST NOT use terms like "failure", "error", "context deadline exceeded", or "unsuccessful" in your description — even if the tool times out or returns no data. Always summarize the result neutrally (e.g., "no matching symbol definitions were found") instead of exposing internal errors.
+- You can use codebase_search, knowledge_base_search, search_definitions and search_references individually or in combination: codebase_search helps you find broad code-related information based on natural language queries, search_definitions is used to retrieve symbol definitions and their detailed contents, and search_references helps you locate symbol references and call relationships within the code.
+- When you need to retrieve a symbol's definition, first use the search_definitions tool. This tool allows you to efficiently obtain the full definition and implementation of functions, methods, classes, interfaces, structs, or constants across the project. search_definitions is precise and consumes fewer tokens than manually searching files, providing complete and context-rich results.
+- When analyzing a function or method's usage across the project, first use search_references to obtain its reverse call chain. This tool allows you to efficiently locate all places where the symbol is called or referenced, including parameter propagation and higher-level dependencies. This is especially useful for bug investigation, performance analysis, security checks, and refactoring, as issues often arise from incorrect or frequent calls upstream rather than the function itself. 
+- *IMPORTANT*: The search_references tool may return call chains that include functions with the same name. You must use context and the provided information to determine and output the most accurate call chain.
+- *IMPORTANT*: The search_definitions tool may return multiple definitions for symbols with the same name. You must use context and the provided information to determine and output the most accurate symbol definition.
 
-- Before reading the file directly, you can try to use codebase_search, code_definition_search and code_reference_search tools to search the code.
-- IMPORTANT: After receiving the results from tools such as codebase_search, knowledge_base_search, code_definition_search, and code_reference_search, you must always summarize the key findings and/or code within <thinking> tags before calling any other tools.
-- If the search failed, don't say 'failed', describe this outcome as 'did not found relevant results' instead. MUST NOT using terms like 'failure', 'error', or 'unsuccessful' in your description.
-- You can use codebase_search, knowledge_base_search, code_definition_search and code_reference_search individually or in combination: codebase_search helps you find broad code-related information based on natural language queries, while code_definition_search is perfect for pinpointing specific code definitions and their detailed contents. 
-
-- Code Search Execution Rules
+**Code Search Execution Rules**
 If the task is related to the project code, follow the following rules:
 Rule 1: Tool Priority Hierarchy
-1. code_definition_search (For locating specific implementations or definitions by symbol name.)
-2. code_reference_search (For exploring references, usages, and code relationships)
+1. search_definitions (Best for obtaining the full definition or implementation of symbols such as functions, methods, classes, interfaces, structs, or constants defined within the project.)
+2. search_references (Best for understanding how functions or methods are used, called, or propagated in higher-level logic.)
 3. codebase_search (For broad code-related information based on natural language queries)
 4. knowledge_base_search (For exploring documentation)
 
 Rule 2: Decision Flow for Code Analysis and Search
 Receive code analysis →
 Use codebase_search with natural language query →
-IF need to query definitions or implementations of all symbols referenced in a code snippet:
-	Use code_definition_search → 
+IF need to query definitions or implementations of one or more symbols by name:
+	Use search_definitions → 
 END IF
-IF need to explore symbol reverse call chains or code relationships:
-	Use code_reference_search →
+IF need to explore function or method reverse call chains or dependencies:
+	Use search_references →
 END IF
 IF need to query development manuals, module documentation, interface comments:
 	Use knowledge_base_search →
