@@ -1,39 +1,53 @@
-# Chat-RAG: OpenAI Compatible Chat Completion API with RAG Compression
+# Chat-RAG 🚀
 
-A high-performance, maintainable microservice built with Gin framework that provides OpenAI-compatible `/v1/chat/completions` endpoint with intelligent prompt compression using RAG (Retrieval-Augmented Generation).
+<div align="center">
 
-## Features
+[![Go Version](https://img.shields.io/badge/Go-1.24.2-blue.svg)](https://golang.org/doc/go1.24) [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE) [![Docker](https://img.shields.io/badge/docker-available-blue.svg)](Dockerfile) [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](#)
 
-- **OpenAI Compatibility**: Fully compatible with OpenAI's chat completions API
-- **Intelligent Compression**: Automatically compresses long prompts using semantic search and summarization
-- **Streaming Support**: Supports both streaming and non-streaming responses
-- **Token Management**: Built-in token counting and threshold-based compression
-- **Comprehensive Logging**: Detailed logging with async processing and Loki integration
-- **Design Patterns**: Implements Strategy, Factory, and Decorator patterns for maintainability
-- **High Performance**: Built with Gin framework with proper dependency injection
+[English](#english) | [中文](./README.zh-CN.md)
 
-## Architecture
+</div>
 
-### Core Components
+## 🎯 Overview
 
-1. **Handler Layer**: HTTP request handling with OpenAI compatibility
-2. **Logic Layer**: Business logic implementation with comprehensive logging
-3. **Strategy Layer**: Pluggable prompt processing strategies (direct vs compression)
-4. **Client Layer**: External service communication (LLM, Semantic Search)
-5. **Service Layer**: Background services (logging, classification, Loki upload)
-6. **Model Layer**: Data structures and logging models
+Chat-RAG is a high-performance, enterprise-grade chat service that combines Large Language Models (LLM) with Retrieval-Augmented Generation (RAG) capabilities. It provides intelligent context processing, tool integration, and streaming responses for modern AI applications.
 
-### Design Patterns
+### Key Features
 
-- **Strategy Pattern**: Different prompt processing strategies based on token count
-- **Factory Pattern**: Creates appropriate processors and clients
-- **Decorator Pattern**: Middleware for logging and metrics
+- **🧠 Intelligent Context Processing**: Advanced prompt engineering with context compression and filtering
+- **🔧 Tool Integration**: Seamless integration with semantic search, code definition lookup, and knowledge base queries
+- **⚡ Streaming Support**: Real-time streaming responses with Server-Sent Events (SSE)
+- **🛡️ Enterprise Security**: JWT-based authentication and request validation
+- **📊 Comprehensive Monitoring**: Built-in metrics and logging with Prometheus support
+- **🔄 Multi-Modal Support**: Support for various LLM models and function calling
+- **🚀 High Performance**: Optimized for low-latency responses and high throughput
+ - **🤖 Semantic Router (migrated from ai-llm-router)**: Optional auto model selection via semantic classification; emits `x-select-llm` and `x-user-input` response headers
 
-## Quick Start
+## 🏗️ Architecture
+
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   API Gateway   │───▶│  Chat Handler   │───▶│  Prompt Engine  │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │
+         ▼                       ▼                       ▼
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│ Authentication│    │  LLM Client     │    │  Tool Executor  │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │
+         ▼                       ▼                       ▼
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Metrics       │    │  Redis Cache    │    │  Search Tools   │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
+
+## 🚀 Quick Start
 
 ### Prerequisites
 
-- Go 1.22+
+- Go 1.24.2 or higher
+- Redis 6.0+ (optional, for caching)
+- Docker (optional, for containerized deployment)
 
 ### Installation
 
@@ -42,90 +56,193 @@ A high-performance, maintainable microservice built with Gin framework that prov
 git clone https://github.com/zgsm-ai/chat-rag.git
 cd chat-rag
 
-# Bootstrap the project (installs tools, generates code, builds)
-make bootstrap
+# Install dependencies
+make deps
 
-# Or step by step:
-make setup         # Generate API code and download deps
-make build         # Build the application
+# Build the application
+make build
+
+# Run with default configuration
+make run
 ```
 
-### Configuration
+### Docker Deployment
 
-Edit `etc/chat-api.yaml`:
+```bash
+# Build Docker image
+make docker-build
+
+# Run container
+make docker-run
+```
+
+## ⚙️ Configuration
+
+The service is configured via YAML files. See [`etc/chat-api.yaml`](etc/chat-api.yaml) for the default configuration:
 
 ```yaml
-Name: chat-rag
+# Server
 Host: 0.0.0.0
 Port: 8080
 
-# Model endpoints
-MainModelEndpoint: "http://localhost:8000/v1/chat/completions"
-SummaryModelEndpoint: "http://localhost:8001/v1/chat/completions"
+# LLM upstream (single endpoint; model is specified in the request body)
+LLM:
+  Endpoint: "http://localhost:8000/v1/chat/completions"
+  # Optional: models that support function-calling
+  FuncCallingModels: ["gpt-4o-mini", "o4-mini"]
 
-# Compression settings
-TokenThreshold: 5000
-EnableCompression: true
+# Context compression
+ContextCompressConfig:
+  EnableCompress: true
+  TokenThreshold: 5000
+  SummaryModel: "deepseek-v3"
+  SummaryModelTokenThreshold: 4000
+  RecentUserMsgUsedNums: 4
 
-# Semantic search
-SemanticApiEndpoint: "http://localhost:8002/codebase-indexer/api/v1/semantics"
-TopK: 5
+# Tool backends (RAG)
+Tools:
+  SemanticSearch:
+    SearchEndpoint: "http://localhost:8002/codebase-indexer/api/v1/semantics"
+    ApiReadyEndpoint: "http://localhost:8002/healthz"
+    TopK: 5
+    ScoreThreshold: 0.3
+  DefinitionSearch:
+    SearchEndpoint: "http://localhost:8002/codebase-indexer/api/v1/definitions"
+    ApiReadyEndpoint: "http://localhost:8002/healthz"
+  ReferenceSearch:
+    SearchEndpoint: "http://localhost:8002/codebase-indexer/api/v1/references"
+    ApiReadyEndpoint: "http://localhost:8002/healthz"
+  KnowledgeSearch:
+    SearchEndpoint: "http://localhost:8003/knowledge/api/v1/search"
+    ApiReadyEndpoint: "http://localhost:8003/healthz"
+    TopK: 5
+    ScoreThreshold: 0.3
 
-# Logging
-LogFilePath: "logs/chat-rag.log"
-LokiEndpoint: "http://localhost:3100/loki/api/v1/push"
-LogBatchSize: 100
-LogScanIntervalSec: 60
+# Logging and classification
+Log:
+  LogFilePath: "logs/chat-rag.log"
+  LokiEndpoint: "http://localhost:3100/loki/api/v1/push"
+  LogScanIntervalSec: 60
+  ClassifyModel: "deepseek-v3"
+  EnableClassification: true
 
-# Models
-SummaryModel: "deepseek-chat"
+# Redis (optional)
+Redis:
+  Addr: "127.0.0.1:6379"
+  Password: ""
+  DB: 0
+
+# Semantic Router (migrated from ai-llm-router). Triggered when request body model == "auto".
+router:
+  enabled: true
+  strategy: semantic
+  semantic:
+    analyzer:
+      model: gpt-4o-mini
+      timeoutMs: 3000
+      # endpoint and apiToken can override global LLM only for analyzer
+      # endpoint: "http://higress-gateway.costrict.svc.cluster.local/v1/chat/completions"
+      # apiToken: "<your-token>"
+      # Optional advanced fields:
+      # totalTimeoutMs: 5000
+      # maxInputBytes: 8192
+      # promptTemplate: ""   # custom classification prompt; default is built-in
+      # analysisLabels: ["simple_request", "planning_request", "code_modification"]
+      # dynamicMetrics:
+      #   enabled: false
+      #   redisPrefix: "ai_router:metrics:"
+      #   metrics: ["error_rate", "p99", "circuit"]
+    inputExtraction:
+      protocol: openai
+      userJoinSep: "\n\n"
+      stripCodeFences: true
+      codeFenceRegex: ""
+      maxUserMessages: 100
+      maxHistoryBytes: 4096
+    routing:
+      candidates:
+        - modelName: "gpt-4o-mini"
+          enabled: true
+          scores:
+            simple_request: 10
+            planning_request: 5
+            code_modification: 3
+        - modelName: "o4-mini"
+          enabled: true
+          scores:
+            simple_request: 4
+            planning_request: 8
+            code_modification: 6
+      minScore: 0
+      tieBreakOrder: ["o4-mini", "gpt-4o-mini"]
+      fallbackModelName: "gpt-4o-mini"
+    ruleEngine:
+      enabled: false
+      inlineRules: []
+      bodyPrefix: "body."
+      headerPrefix: "header."
 ```
 
-### Running
+#### Configuration details (highlights)
 
-```bash
-# Run with default config
-make run
+- LLM
+  - Endpoint: Single Chat Completions endpoint. Final model is carried by request body `model`.
+  - FuncCallingModels: Models supporting function-calling to enable tools.
+- ContextCompressConfig
+  - EnableCompress: Whether to compress long prompts.
+  - TokenThreshold: Trigger threshold for compression (input tokens).
+  - SummaryModel / SummaryModelTokenThreshold: Model and threshold used for summarization.
+  - RecentUserMsgUsedNums: Number of recent user messages considered for compression.
+- Tools (RAG)
+  - Each search block provides HTTP endpoints. TopK/ScoreThreshold control recall count and quality.
+- Log
+  - LogFilePath: Local log file persisted before background upload to Loki.
+  - LokiEndpoint: Loki push endpoint.
+  - LogScanIntervalSec: Scan/upload interval in seconds.
+  - ClassifyModel / EnableClassification: Optional LLM-based log categorization.
+- Redis: Optional; used by tools, router dynamic metrics, and transient statuses.
+- router (Semantic Router)
+  - enabled/strategy: Enable semantic router; current strategy is `semantic`.
+  - semantic.analyzer: Classification model/timeouts; can override endpoint/apiToken for analyzer-only calls; uses a separate non-streaming client in auto mode; optional custom prompt/labels; optional dynamic metrics via Redis.
+  - semantic.inputExtraction: Controls extraction of current user input and bounded history; supports stripping code fences.
+  - semantic.routing: Candidate model score table; tie-break via `tieBreakOrder`; fallback via `fallbackModelName`.
+  - semantic.ruleEngine: Optional rule engine to pre-filter candidates (disabled by default).
 
-# Run with custom config
-make run-config CONFIG=path/to/your/config.yaml
+## 📡 API Endpoints
 
-# Development mode with auto-reload (requires air)
-make install-air
-make dev
-```
-
-## API Usage
-
-### Basic Chat Completion
+### Chat Completion (non-streaming)
 
 ```bash
 curl -X POST http://localhost:8080/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "gpt-3.5-turbo",
+    "model": "gpt-4o-mini",
     "messages": [
-      {"role": "user", "content": "Hello, how are you?"}
+      {"role": "user", "content": "What is the weather like today?"}
     ],
     "stream": false
   }'
 ```
 
-### With RAG Context
+### Enable Semantic Router (auto selection)
+
+Set request body `model` to `auto` and enable `router.enabled: true` in config:
 
 ```bash
-curl -X POST http://localhost:8080/v1/chat/completions \
+curl -i -X POST http://localhost:8080/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "gpt-3.5-turbo",
+    "model": "auto",
     "messages": [
-      {"role": "user", "content": "Explain this code function"}
+      {"role": "user", "content": "Give me a detailed refactor plan with code examples"}
     ],
-    "client_id": "user123",
-    "project_path": "/path/to/project",
     "stream": false
   }'
 ```
+
+Response headers:
+- `x-select-llm`: selected downstream model name
+- `x-user-input`: extracted user input for classification (sanitized and base64-encoded)
 
 ### Streaming Response
 
@@ -133,7 +250,7 @@ curl -X POST http://localhost:8080/v1/chat/completions \
 curl -X POST http://localhost:8080/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "gpt-3.5-turbo",
+    "model": "gpt-4o-mini",
     "messages": [
       {"role": "user", "content": "Write a Python function"}
     ],
@@ -141,126 +258,167 @@ curl -X POST http://localhost:8080/v1/chat/completions \
   }'
 ```
 
-## How It Works
+### Metrics
 
-### Compression Flow
+Prometheus metrics are exposed at `/metrics`. See `METRICS.md` for full metric names and labels.
 
-1. **Token Analysis**: Count tokens in incoming messages
-2. **Threshold Check**: If tokens > threshold, trigger compression
-3. **Semantic Search**: Query codebase for relevant context using latest user message
-4. **Summarization**: Use LLM to compress context + history + query
-5. **Final Assembly**: Combine system prompt + summary + latest user message
-6. **LLM Generation**: Send to main model and return response
+## 🔧 Development
 
-### Logging Pipeline
-
-1. **Request Logging**: Log each request with metrics (non-blocking)
-2. **File Storage**: Write logs to local file system
-3. **Background Processing**: Periodic scan and classification using LLM
-4. **Loki Upload**: Batch upload classified logs to Loki with labels
-
-## Project Structure
+### Project Structure
 
 ```
 chat-rag/
-├── etc/                   # Configuration files
-│   └── chat-api.yaml     # Service configuration
-├── deploy/               # Deployment configurations
-├── internal/             # Internal packages
-│   ├── bootstrap/        # Service context (DI container)
-│   ├── client/           # External service clients
-│   │   ├── llm.go       # LangChain-Go LLM client
-│   │   ├── semantic.go  # Semantic search client
-│   ├── config/          # Configuration structures
-│   │   ├── config.go
-│   │   └── loader.go
-│   ├── handler/         # HTTP handlers
-│   ├── logic/          # Business logic
-│   ├── model/          # Data models
-│   ├── service/        # Background services
-│   ├── strategy/       # Prompt arrangement strategy implementations
-│   ├── tokenizer/      # Token counting utilities
-│   ├── types/          # Generated type definitions
-│   ├── utils/          # Utility functions
-│   └── logger/         # Logging utilities
-├── logs/               # Log files (created at runtime)
-├── Makefile           # Build and development commands
-├── main.go           # Application entry point
-└── README.md         # This file
+├── internal/
+│   ├── handler/          # HTTP handlers
+│   ├── logic/           # Business logic
+│   ├── client/          # External service clients
+│   ├── router/          # Semantic router (strategy + factory)
+│   ├── promptflow/      # Prompt processing pipeline
+│   ├── functions/       # Tool execution engine
+│   └── config/          # Configuration management
+├── etc/                 # Configuration files
+├── test/               # Test files
+└── deploy/             # Deployment configurations
 ```
-
-## Development
 
 ### Available Commands
 
 ```bash
-make help           # Show all available commands
-make build          # Build the application
-make run            # Run with default config
-make test           # Run tests
-make fmt            # Format code
-make vet            # Vet code
-make clean          # Clean build artifacts
-make api-gen        # Regenerate API code
-make deps           # Update dependencies
+make help              # Show available commands
+make build            # Build the application
+make test             # Run tests
+make fmt              # Format code
+make vet              # Vet code
+make docker-build     # Build Docker image
+make dev              # Run development server with auto-reload
 ```
 
-### Docker Image
+### Testing
 
 ```bash
-# Docker build
-make docker-build
+# Run all tests
+make test
 
-# Build and push Docker image
-make docker-release VERSION=v1.0.0
+# Run specific test
+go test -v ./internal/logic/
+
+# Run with coverage
+go test -cover ./...
 ```
 
-### Adding New Features
+## 🔍 Advanced Features
 
-1. **New API Endpoints**: Update `api/chat.api` and run `make api-gen`
-2. **New Strategies**: Implement `strategy.PromptProcessor` interface
-3. **New Clients**: Add to `internal/client/` with proper error handling
-4. **New Services**: Add to `internal/service/` with lifecycle management
+### Context Compression
 
-## Configuration Options
+Intelligent context compression to handle long conversations:
 
-| Option               | Description                        | Default     |
-| -------------------- | ---------------------------------- | ----------- |
-| `TokenThreshold`     | Token count to trigger compression | 32000       |
-| `TopK`               | Number of semantic search results  | 5           |
-| `LogScanIntervalSec` | Log processing interval            | 10          |
-| `SummaryModel`       | Model for summarization            | deepseek-v3 |
+```yaml
+ContextCompressConfig:
+  EnableCompress: true
+  TokenThreshold: 5000
+  SummaryModel: "deepseek-v3"
+  SummaryModelTokenThreshold: 4000
+  RecentUserMsgUsedNums: 4
+```
 
-## Monitoring and Observability
+### Tool Integration
 
-### Metrics Logged
+Support for multiple search and analysis tools:
 
-- Request/response latencies
-- Token counts (original vs compressed)
-- Compression ratios
-- Error rates
-- Semantic search performance
-- Model inference times
+- **Semantic Search**: Vector-based code and document search
+- **Definition Search**: Code definition lookup
+- **Reference Search**: Code reference analysis
+- **Knowledge Search**: Document knowledge base queries
 
-### Log Categories
+### Semantic Router (migrated from ai-llm-router)
 
-- `code_generation`: Creating new code or projects
-- `bug_fixing`: Debugging or fixing issues
-- `exploration`: Asking questions about code
-- `documentation`: Querying documentation
-- `optimization`: Performance improvements
+When `router.enabled: true` and request body `model` is `auto`, the service selects the best downstream model automatically:
 
-## Dependencies
+1. Input extraction: extract current user input and limited history per `router.semantic.inputExtraction` (can strip code fences)
+2. Semantic classification: call `router.semantic.analyzer.model` to get a label (default: simple_request / planning_request / code_modification)
+3. Candidate scoring: score `routing.candidates` by label; support `minScore` and optional dynamic metrics
+4. Tie-break & fallback: break ties via `tieBreakOrder`; fallback to `fallbackModelName` on errors or low scores
+5. Observability: write `x-select-llm` and `x-user-input` to HTTP response headers
 
-### Core Dependencies
+### Agent-Based Processing
 
-- **gin**: Web framework and microservice toolkit
-- **tiktoken-go**: Token counting (with fallback)
-- **uuid**: Request ID generation
+Configurable agent matching for specialized tasks:
 
-### External Services
+```yaml
+AgentsMatch:
+  - AgentName: "strict"
+    MatchKey: "a strict strategic workflow controller"
+  - AgentName: "code"
+    MatchKey: "a highly skilled software engineer"
+```
 
-- **Main LLM**: Primary model for chat completions
-- **Summary LLM**: DeepSeek v3 for compression
-- **Semantic Search**: Codebase indexer API
-- **Loki**: Log aggregation and storage
+## 📊 Monitoring & Observability
+
+### Metrics
+
+The service exposes Prometheus metrics at `/metrics` endpoint (see `METRICS.md` for full metric names and labels):
+
+- Request count and latency
+- Token usage statistics
+- Tool execution metrics
+- Error rates and types
+
+Routing observability response headers:
+- `x-select-llm`: selected model name
+- `x-user-input`: base64 of extracted user input used for classification
+
+### Logging
+
+Structured logging with Zap logger:
+
+- Request/response logging
+- Error tracking
+- Performance metrics
+- Debug information
+
+## 🔒 Security
+
+- JWT-based authentication
+- Request validation and sanitization
+- Rate limiting support
+- Secure header handling
+
+## 🚢 Deployment
+
+### Production Deployment
+
+```bash
+# Build for production
+CGO_ENABLED=0 GOOS=linux go build -o chat-rag .
+
+# Run with production config
+./chat-rag -f etc/prod.yaml
+```
+
+### Kubernetes Deployment
+
+See [`deploy/`](deploy/) directory for Kubernetes manifests and Helm charts.
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🆘 Support
+
+For support and questions:
+- Create an issue in the GitHub repository
+- Contact the maintainers
+
+---
+
+<div align="center">
+  <b>⭐ If this project helps you, please give us a star!</b>
+</div>
